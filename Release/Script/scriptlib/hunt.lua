@@ -3,6 +3,7 @@
 local vk = require('virtualkey')
 local global = require('global')
 
+
 local module = 
 {
     YDisReScale = 1,
@@ -190,7 +191,11 @@ local function TryAttack(moblist)
 end
 
 local FailCount = 0
-local fixedCoordinates = {x = , y = } -- 替换为你想要的坐标
+local fixedCoordinates = {x = -486, y = -25} -- 替换为你想要的坐标
+
+function module.setFixedCoordinates(newCoordinates)
+    fixedCoordinates = newCoordinates
+end
 
 function module.Run()
     local Player = GetPlayer()
@@ -235,10 +240,13 @@ function module.Run()
         else
             FailCount = 0
         end
-
-        -- 确保玩家在固定坐标处攻击怪物
+        
+        -- Ensure player attacks monsters at fixed coordinates
         if Player.x == fixedCoordinates.x and Player.y == fixedCoordinates.y then
-            TryAttack(moblist)
+            local attack_count = CountAttackableMob(Player, moblist, Player.Orientation)
+            if attack_count > 0 then
+                TryAttack(moblist)
+            end
         end
     end
 end
