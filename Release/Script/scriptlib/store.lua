@@ -26,7 +26,6 @@ local function BuyPacket(loc,ID,Num)
 end
 
 local function CheckWhiteList(Type,Item,List)
-
     if Type=="equip" then
         ID=Item.ID
         local tmp=false
@@ -42,18 +41,27 @@ local function CheckWhiteList(Type,Item,List)
         return tmp
     end
 
+    -- Commented out ETC and USE references
+    -- if Type=="use" or Type=="etc" then
+    -- 	ID = Item.ID
+    -- 	for i=1, global.length(List) do
+    -- 		if ID==List[i].ID then
+    -- 			return true
+    -- 		end
+    -- 	end
+    -- end
     return false
 end
 
 local module = 
 {
     IfStore = true,  
-    CheckInventoryInterval = 4, 			-- check the equip inventory every 5 min; if the equip is full, go to the store
-    StoreMap=100000102,
-    NPCLocation = {-213, 182},
+    CheckInventoryInterval = 1, 			-- check the equip inventory every 5 min; if the equip is full, go to the store
+    StoreMap=211040200,
+    NPCLocation = {212, -2071},
     NPCChatKey = vk.VK_SPACE,
-    SellWhenEquipsMoreThan=15,
-    CCAfterSell= {On = true, RandomCC = false},
+    SellWhenEquipsMoreThan=1,
+    CCAfterSell= {On = true, RandomCC = false},  -- Set CCAfterSell.On to false
     TotalChannel = 3,
     Potion =
     {
@@ -76,48 +84,37 @@ local module =
         {ID=1122077,Stats={}},
         {ID=1222222,Stats={"Str", 1,"Dex", 2} },
     },
-    UseEtcWhiteList=  -- you need add quest item ID here, because it cannot be sold by packets
-    {
-        {ID=2030004},
-        {ID=2030000},
-    },
+    -- Commented out UseEtcWhiteList
+    -- UseEtcWhiteList=  -- you need add quest item ID here, because it cannot be sold by packets
+    -- {
+    -- 	{ID=2030004},
+    -- 	{ID=2030000},
+    -- },
+
+
 }
 
 local __LastInventoryCheck  =  os.clock()-1000
 
 function module.Check()
-    if module.IfStore == false then return end
-    
-    if (os.clock() - __LastInventoryCheck) / 60 >= module.CheckInventoryInterval and global.IfStore == false then    
+
+    if module.IfStore==false then return end
+
+    if (os.clock()-__LastInventoryCheck)/60>= module.CheckInventoryInterval and global.IfStore==false then	
         StopMove()
         Delay(100)
-        RefreshInventory({"Equip", "Use", "Etc"})
-        Inventory = GetFullInventory({"Equip", "Use", "Etc"})
-        local ne = global.length(Inventory.Equip)
-        local nu = global.length(Inventory.Use)
-        local nc = global.length(Inventory.Etc)
+        RefreshInventory({"Equip"})
+        Inventory = GetFullInventory({"Equip"})
+        local ne=global.length(Inventory.Equip)
         
-        print(string.format("Inventory Updates: [%d equips], [%d use], [%d etc]", ne, nu, nc))
-        if ne >= module.SellWhenEquipsMoreThan then
+        print(string.format("Inventory Updates: [%d equips]",ne))
+        if ne>=module.SellWhenEquipsMoreThan then
             print("Need to sell Inventory, go to store")
-            global.IfStore = true
-            global.IfHunt = false
-            global.IfLoot = false
-        end
-        __LastInventoryCheck = os.clock()
-    end
+            global.IfStore=true
+            global.IfHunt=false
+            global.IfLoot=false
 
-    if global.IfStore == false and module.Potion.IfBuyPots
-        and (NumOnQuickSlot(module.Potion.HpOnKey) < module.Potion.BuyPotionList.HP.LowerLimit
-        or   NumOnQuickSlot(module.Potion.MpOnKey) < module.Potion.BuyPotionList.MP.LowerLimit) then
-        print("Need to buy Potion, go to store")
-        global.IfStore = true
-        global.IfHunt = false
-        global.IfLoot = false
-    end
-    
-    return 
-end
+        end
         __LastInventoryCheck = os.clock()
     end
 
@@ -183,20 +180,6 @@ function module.Sell(Player)
         print("Send Close Store")
         Delay(1000)
 
-        if module.CCAfterSell.On then
-            print("Sell Done, Change Channel")
-            local channel = GetChannel()+1
-            if  channel>module.TotalChannel then channel = 1 end
-            if module.CCAfterSell.RandomCC==true then 
-                channel =  GetChannel()
-                while  channel ==  GetChannel() do
-                    channel = math.random(1,module.TotalChannel)
-                end
-            end
-            ChangeChannel(channel)
-            Delay(2000)
-        end
-
         global.IfStore=false
         global.IfHunt=true
         global.IfLoot=true
@@ -204,7 +187,7 @@ function module.Sell(Player)
     else
         local ms = MoveTo(module.NPCLocation[1], module.NPCLocation[2])
         if ms==2 then
-            print("module.Sell: Uable to find the path")
+            print("module.Sell: Unable to find the path")
             StopMove()
         end
 
