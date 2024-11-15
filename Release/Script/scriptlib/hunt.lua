@@ -138,6 +138,7 @@ local function TryAttack(moblist)
     local Player = GetPlayer()
 
     if Player.OnRope == true or Player.InAir == true then
+        print("Player is on rope or in air, cannot attack")
         return false
     end
 
@@ -145,6 +146,8 @@ local function TryAttack(moblist)
     local orient = Player.Orientation
     local attack_count = CountAttackableMob(Player, moblist, orient)
 
+    print("TryAttack: Initial attack count:", attack_count)
+    
     if attack_count < module.Attack.MobAttack and module.Attack.HasOrient then
         need_reverse = true
         if orient == 1 then
@@ -154,6 +157,8 @@ local function TryAttack(moblist)
         end
     end
 
+    print("TryAttack: Final attack count:", attack_count)
+    
     if attack_count >= module.Attack.MobAttack then
         if need_reverse then
             StopMove()
@@ -191,7 +196,7 @@ local function TryAttack(moblist)
 end
 
 local FailCount = 0
-local fixedCoordinates = {x = -486, y = -25} -- 替换为你想要的坐标
+local fixedCoordinates = {x = 36, y = -1678} -- 替换为你想要的坐标
 
 function module.setFixedCoordinates(newCoordinates)
     fixedCoordinates = newCoordinates
@@ -217,35 +222,26 @@ function module.Run()
     end
 
     while true do
-        local attackable = TryAttack(moblist)
+        Player = GetPlayer()
+        print("Player position: ", Player.x, Player.y)
+        print("Fixed coordinates: ", fixedCoordinates.x, fixedCoordinates.y)
 
-        if attackable and module.Attack.StopMoveWhenAttack then
-            StopMove()
-            return 0
-        end
-
-        if global.IngorePathingToMob then
-            return 0
-        end
-
-        local ms = MoveTo(fixedCoordinates.x, fixedCoordinates.y)
-
-        if ms == 2 then
-            FailCount = FailCount + 1
-            if FailCount > 5 then
-                print("Unable to find the path, trying random mob")
-                local idx = math.random(global.length(moblist))
-                MoveTo(moblist[idx].x, moblist[idx].y)
-            end
+        -- Add tolerance to fixed coordinates check
+        if math.abs(Player.x - fixedCoordinates.x) <= 20 and math.abs(Player.y - fixedCoordinates.y) <= 200 then
+            print("Player within tolerance range of fixed coordinates, attempting to attack")
+            TryAttack(moblist)
         else
-            FailCount = 0
-        end
-        
-        -- Ensure player attacks monsters at fixed coordinates
-        if Player.x == fixedCoordinates.x and Player.y == fixedCoordinates.y then
-            local attack_count = CountAttackableMob(Player, moblist, Player.Orientation)
-            if attack_count > 0 then
-                TryAttack(moblist)
+            print("Moving to fixed coordinates")
+            local ms = MoveTo(fixedCoordinates.x, fixedCoordinates.y)
+            if ms == 2 then
+                FailCount = FailCount + 1
+                if FailCount > 5 then
+                    print("Unable to find the path, trying random mob")
+                    local idx = math.random(global.length(moblist))
+                    MoveTo(moblist[idx].x, moblist[idx].y)
+                end
+            else
+                FailCount = 0
             end
         end
     end
