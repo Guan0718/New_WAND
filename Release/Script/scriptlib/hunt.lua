@@ -3,7 +3,6 @@
 local vk = require('virtualkey')
 local global = require('global')
 
-
 local module = 
 {
     YDisReScale = 1,
@@ -133,6 +132,31 @@ local function FindNextPos(moblist)
     return target
 end
 
+local function AutoBuff(Player)
+    --check the buffs
+    if global.IfStore or module.Buffs.IfAutoBuff == false then return end
+    local Buffs = GetBuffandDebuff()
+    for i = 1, global.length(module.Buffs.Buff) do
+
+        local Found = false
+        local time_remain = 10000
+        for k, buff in pairs(Buffs.Buff) do
+            if buff.ID == module.Buffs.Buff[i].ID then
+                time_remain = buff.time_remain
+                Found = true
+            end
+        end
+
+        if Found == false or (Found and time_remain <= module.Buffs.ReBuffAdvanceSec) then
+            if module.Buffs.CanBuffOnRope == true or Player.OnRope == false then
+                SendKey(module.Buffs.Buff[i].key, 2)
+                print(string.format("Trying to Add Buff, ID = %d", module.Buffs.Buff[i].ID))
+                Delay(400)
+            end
+        end
+    end
+end
+
 local function TryAttack(moblist)
     if not enableTryAttack then return end
     local Player = GetPlayer()
@@ -141,6 +165,9 @@ local function TryAttack(moblist)
         print("Player is on rope or in air, cannot attack")
         return false
     end
+
+    -- Check and apply buffs before attacking
+    AutoBuff(Player)
 
     local need_reverse = false
     local orient = Player.Orientation
