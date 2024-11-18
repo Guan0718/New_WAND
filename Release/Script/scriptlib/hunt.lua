@@ -1,5 +1,8 @@
 -- 2022 by Spike
 
+PlatCount = 2,
+ManuPlat = true,
+ManuPlats = {635, 305, 667, -235}, --X/Y
 local vk = require('virtualkey')
 local global = require('global')
 
@@ -176,57 +179,48 @@ end
 
 local FailCount = 0
 function module.Run()
-    local Player = GetPlayer()
-    local c = 1
-    local moblist = {}
-    local Mobs = GetAllMobs()
+    local index=1;
+local FailCount=0;
+local Edge=false; --only if you use edge detection
+function module.Run()
+local PlatY = module.ManuPlats[index*2] --set manuplats in module
+local PlatX = module.ManuPlats[index*2-1]
+local Player = GetPlayer();
+local c=1
+local moblist ={}
+local Mobs = GetAllMobs()
 
-    if Mobs == nil then
-        print("No Mob in the Map!")
-        StopMove()
-        return 0
-    end
+if Mobs==nil then
+print("No Mob in the Map!")
+return 0
+end
+if module.ManuPlat==false then
+for k, mob in pairs(Mobs) do
+if  mob.invisible==false then
+moblist[c]={}
+moblist[c].x=mob.x
+moblist[c].y=mob.y
+c=c+1
+end
+end
+end
 
-    for k, mob in pairs(Mobs) do
-        if mob.invisible == false then
-            moblist[c] = {}       
-            moblist[c].x = mob.x
-            moblist[c].y = mob.y
-            c = c + 1
-        end
-    end
+if module.ManuPlat==true then
+for k, mob in pairs(Mobs) do
+if  mob.invisible==false then
+if mob.y == PlatY and  mob.x < PlatX+2000  and  mob.x > PlatX-2000 then
+moblist[c]={}
+moblist[c].x=mob.x
+moblist[c].y=mob.y
+c=c+1
+end
+end
+end
+end
 
-    local attackable = TryAttack(moblist)
-    
-    if attackable and module.Attack.StopMoveWhenAttack then
-        StopMove()
-        return 0 
-    end
-    
-    if global.IngorePathingToMob then
-        return 0
-    end
 
-    last_target = FindNextPos(moblist)  
-    if last_target ~= nil then
-        local dst = math.abs(last_target.x - Player.x) + math.abs(last_target.y - Player.y)
-        local ms = MoveTo(last_target.x, last_target.y)
-    
-        if ms == 2 then
-            FailCount = FailCount + 1
-            if FailCount > 5 then
-                print("Unable to find the path, try random mob")
-                local idx = math.random(global.length(moblist))
-                MoveTo(moblist[idx].x, moblist[idx].y)
-            end
-        else
-            FailCount = 0
-        end
-
-        return 0
-    end 
-    print("Unable to find mob")
-    return 0
+if c==1 then
+index= (index)%module.PlatCount+1
 end
 
 return module
