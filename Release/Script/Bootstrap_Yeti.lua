@@ -17,8 +17,10 @@ local hunt   = require('hunt')
 local loot   = require('loot')
 local maple  = require('maple')
 local walk   = require('walk')
+local PetFeedTick = os.clock()
 
-local fixedCoordinates = {x = -486 , y = -25} -- 替换为你想要的坐标
+local fixedCoordinates = {x = 131 , y = -1186} -- 替换为你想要的坐标
+hunt.setFixedCoordinates(fixedCoordinates)
 
 -----------------------Start from here-----------------------------------------------
 -----------------------Start from here-----------------------------------------------
@@ -33,13 +35,13 @@ local fixedCoordinates = {x = -486 , y = -25} -- 替换为你想要的坐标
 maple.MaxRunTime = 3000   --max run time in minute 
 maple.HuntMapList =     -- append hunt map ID, and SafeSpot here
     {
-        {ID=541020100,SafeSpot={-500, -25}},
+        {ID=211040200,SafeSpot={108, -2076}},
         
     } 
 maple.CCAtSafeSpot = {On = true, RandomCC = false, SwitchMapAfterCC=false}  --CC at SafeSpot
 maple.SwitchMapAfterMin = 600 -- switch hunt map after x min, if you have more than one map in HuntMapList
 maple.TotalChannel = 20      -- total channel 
---
+
 maple.AlertTimeSec = 1        -- when someone stay in map for more than x sec, go to safespot
 maple.PlayerWhiteList = {"EsoChen", "Kevincurry", "SMRT63ss"}       -- player white list, you can put your partner's ign  here
 maple.AlertWhenMobAppears = {1234567}       -- alert when some strange mob ID appears 
@@ -52,6 +54,11 @@ ReturnScrollID = 2030000            -- return scroll item ID
 ------
 maple.StopAtLevel = 200              -- stop at level = x
 maple.AutoAp = {str=0, dex=0, int =5, luk = 0}  --auto ap
+
+maple.PetFeed = true -- Enable pet feeding
+maple.petfoodkey = vk.VK_= -- Pet food key
+maple.MinFullness = 30 -- Minimum pet fullness level
+maple.PetFeedDelay = 1 -- Pet feed delay in seconds
 ------
 maple.Movement=
     {   MaxJump = 80,
@@ -178,7 +185,7 @@ hunt.Keepaway =
     }
 hunt.Attack =
     {
-        HasOrient = true,   
+        HasOrient = false,   
         Key =  vk.VK_X, --single attack
         Key2 = vk.VK_X, --group attack  
         MobAttack = 0,        -- attack when mobs near you >= x
@@ -186,14 +193,14 @@ hunt.Attack =
         Range = {
             IsFan = false,
             FanMinDistance = 100,
-            Front = 100,      -- attack range in front: for spear, probably 120
-            Back = 100,        -- attack range: back
-            Top = 100,        -- attack range: top
-            Bottom = 100,
+            Front = 50,      -- attack range in front: for spear, probably 120
+            Back = 50,        -- attack range: back
+            Top = 50,        -- attack range: top
+            Bottom = 50,
         },
         count=0
     }
- hunt.YDisReScale = 2       -- rescale the vertical direction in distance calculator , if YDisReScale>1, the bot is prone to transverse movement 
+ hunt.YDisReScale = 1       -- rescale the vertical direction in distance calculator , if YDisReScale>1, the bot is prone to transverse movement 
 
 --------------------------------------------------------------------------------------
  -- loot
