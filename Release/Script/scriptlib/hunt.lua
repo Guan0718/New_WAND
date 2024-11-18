@@ -15,8 +15,8 @@ local module =
     Attack =
     {
         HasOrient = true,   
-        Key = vk.VK_CONTROL,   --single attack
-        Key2 = vk.VK_CONTROL, --group attack  
+        Key = vk.VK_CONTROL,   -- single attack
+        Key2 = vk.VK_CONTROL,  -- group attack  
         MobAttack = 1,  
         MobFind = 1,        
         Range = {
@@ -29,46 +29,33 @@ local module =
         },
         count = 0
     },
-    --helper parameters
+    -- helper parameters
     Mindis = 12
 }
 
--- Enable or disable functions
-local enableDefaultDistanceCaculator = true
-local enableItemInsideMap = true
-local enableCheckKeepwayRange = true
-local enableCheckAttackRange = true
-local enableCountAttackableMob = true
-local enableFindNextPos = true
-local enableTryAttack = true
-
---helper functions
-local function DefaultDistanceCaculator(x1, y1, x2, y2, YDisReScale)
-    if not enableDefaultDistanceCaculator then return end
-    return math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) * YDisReScale * YDisReScale)
+-- helper functions
+local function DefaultDistanceCaculator(x1,y1,x2,y2,YDisReScale) 
+    return math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)*YDisReScale*YDisReScale) 
 end
 
-local function ItemInsideMap(pos, left, top, right, bottom)
-    if not enableItemInsideMap then return end
+local function ItemInsideMap(pos,left,top,right,bottom)
     return pos.x > left + module.Mindis and pos.x < right - module.Mindis 
-       and pos.y > top + module.Mindis and pos.y <= bottom
+        and pos.y > top + module.Mindis and pos.y <= bottom
 end
 
-local function CheckKeepwayRange(pos, mob, orient)
-    if not enableCheckKeepwayRange then return end
+local function CheckKeepwayRange(pos,mob,orient)
     if orient == 0 then 
         -- player facing left
         return (mob.x <= pos.x - module.Keepaway.Front or mob.x >= pos.x + module.Keepaway.Back)
-           and (mob.y <= pos.y - module.Keepaway.Top or mob.y >= pos.y + module.Keepaway.Bottom)
+            and (mob.y <= pos.y - module.Keepaway.Top or mob.y >= pos.y + module.Keepaway.Bottom) 
     else 
         -- player facing right
         return (mob.x <= pos.x - module.Keepaway.Back or mob.x >= pos.x + module.Keepaway.Front)
-           and (mob.y <= pos.y - module.Keepaway.Top or mob.y >= pos.y + module.Keepaway.Bottom)
+            and (mob.y <= pos.y - module.Keepaway.Top or mob.y >= pos.y + module.Keepaway.Bottom)
     end
 end
 
-local function CheckAttackRange(pos, mob, orient)
-    if not enableCheckAttackRange then return end
+local function CheckAttackRange(pos,mob,orient)
     if module.Attack.Range.IsFan then
         local dx = math.abs(mob.x - pos.x)
         local dy = pos.y - mob.y
@@ -80,23 +67,22 @@ local function CheckAttackRange(pos, mob, orient)
     if orient == 0 then 
         -- player facing left
         return mob.x >= pos.x - module.Attack.Range.Front 
-           and mob.x <= pos.x + module.Attack.Range.Back 
-           and mob.y >= pos.y - module.Attack.Range.Top 
-           and mob.y <= pos.y + module.Attack.Range.Bottom 
+            and mob.x <= pos.x + module.Attack.Range.Back 
+            and mob.y >= pos.y - module.Attack.Range.Top 
+            and mob.y <= pos.y + module.Attack.Range.Bottom 
     else 
         -- player facing right
         return mob.x >= pos.x - module.Attack.Range.Back 
-           and mob.x <= pos.x + module.Attack.Range.Front 
-           and mob.y >= pos.y - module.Attack.Range.Top 
-           and mob.y <= pos.y + module.Attack.Range.Bottom 
+            and mob.x <= pos.x + module.Attack.Range.Front 
+            and mob.y >= pos.y - module.Attack.Range.Top 
+            and mob.y <= pos.y + module.Attack.Range.Bottom 
     end
 end
 
-local function CountAttackableMob(pos, moblist, orient)
-    if not enableCountAttackableMob then return end
+local function CountAttackableMob(pos,moblist,orient)
     local attack_count = 0
-    for idx, mob in pairs(moblist) do
-        if CheckAttackRange(pos, mob, orient) and CheckKeepwayRange(pos, mob, orient) then
+    for idx,mob in pairs(moblist) do
+        if CheckAttackRange(pos,mob,orient) and CheckKeepwayRange(pos,mob,orient) then
             attack_count = attack_count + 1
         end
     end
@@ -104,20 +90,19 @@ local function CountAttackableMob(pos, moblist, orient)
 end
 
 local function FindNextPos(moblist)
-    if not enableFindNextPos then return end
     local target = nil
     local dst = 9999999999
     local Player = GetPlayer()
     local mapBound = GetMapDimension()
 
-    for k, mob in pairs(moblist) do
+    for k,mob in pairs(moblist) do
         local attack_count = CountAttackableMob(mob, moblist, 0)
 
         if attack_count < module.Attack.MobFind and module.Attack.HasOrient then
-            attack_count = CountAttackableMob(mob, moblist, 1)
+            attack_count = CountAttackableMob(mob, moblist, 1)      
         end
 
-        if attack_count >= module.Attack.MobFind then
+        if attack_count >= module.Attack.MobFind then    
             if module.MobDistanceCaculator == nil then
                 module.MobDistanceCaculator = DefaultDistanceCaculator
             end
@@ -132,63 +117,29 @@ local function FindNextPos(moblist)
     return target
 end
 
-local function AutoBuff(Player)
-    --check the buffs
-    if global.IfStore or module.Buffs.IfAutoBuff == false then return end
-    local Buffs = GetBuffandDebuff()
-    for i = 1, global.length(module.Buffs.Buff) do
-
-        local Found = false
-        local time_remain = 10000
-        for k, buff in pairs(Buffs.Buff) do
-            if buff.ID == module.Buffs.Buff[i].ID then
-                time_remain = buff.time_remain
-                Found = true
-            end
-        end
-
-        if Found == false or (Found and time_remain <= module.Buffs.ReBuffAdvanceSec) then
-            if module.Buffs.CanBuffOnRope == true or Player.OnRope == false then
-                SendKey(module.Buffs.Buff[i].key, 2)
-                print(string.format("Trying to Add Buff, ID = %d", module.Buffs.Buff[i].ID))
-                Delay(400)
-            end
-        end
-    end
-end
-
 local function TryAttack(moblist)
-    if not enableTryAttack then return end
     local Player = GetPlayer()
-
+    
     if Player.OnRope == true or Player.InAir == true then
-        print("Player is on rope or in air, cannot attack")
         return false
     end
-
-    -- Check and apply buffs before attacking
-    AutoBuff(Player)
-
-    local need_reverse = false
-    local orient = Player.Orientation
-    local attack_count = CountAttackableMob(Player, moblist, orient)
-
-    print("TryAttack: Initial attack count:", attack_count)
     
-    if attack_count < module.Attack.MobAttack and module.Attack.HasOrient then
+    local need_reverse = false
+    local orient = Player.Orientation 
+    local attack_count = CountAttackableMob(Player, moblist, orient)
+    
+    if attack_count < module.Attack.MobAttack and module.Attack.HasOrient then                                
         need_reverse = true
         if orient == 1 then
-            attack_count = CountAttackableMob(Player, moblist, 0)
+            attack_count = CountAttackableMob(Player, moblist, 0)    
         else
-            attack_count = CountAttackableMob(Player, moblist, 1)
-        end
+            attack_count = CountAttackableMob(Player, moblist, 1)    
+        end 
     end
-
-    print("TryAttack: Final attack count:", attack_count)
-    
-    if attack_count >= module.Attack.MobAttack then
-        if need_reverse then
-            StopMove()
+        
+    if attack_count >= module.Attack.MobAttack then          
+        if need_reverse then 
+            StopMove() 
             if orient == 1 then
                 HoldKey(vk.VK_RIGHT, 0)
                 SendKey(vk.VK_LEFT)
@@ -198,7 +149,7 @@ local function TryAttack(moblist)
                 HoldKey(vk.VK_LEFT, 0)
                 SendKey(vk.VK_RIGHT)
                 SendKey(vk.VK_RIGHT)
-                HoldKey(vk.VK_RIGHT, 1)
+                HoldKey(vk.VK_RIGHT, 1)                
             end
             Delay(100)
         end
@@ -206,16 +157,17 @@ local function TryAttack(moblist)
         if module.StopMoveWhenAttack then
             StopMove()
         end
-        HoldKey(vk.VK_DOWN, 0)
+        HoldKey(vk.VK_DOWN, 0)        
+        ------------------------------------
         if attack_count > module.Attack.MobAttack then
             SendKey(module.Attack.Key2)
             Delay(50)
         else
-            SendKey(module.Attack.Key)
+            SendKey(module.Attack.Key)  
             Delay(50)
         end
         module.Attack.count = module.Attack.count + 1
-
+            
         return true
     end
 
@@ -223,12 +175,6 @@ local function TryAttack(moblist)
 end
 
 local FailCount = 0
-local fixedCoordinates = {x = 36, y = -1678} -- 替换为你想要的坐标
-
-function module.setFixedCoordinates(newCoordinates)
-    fixedCoordinates = newCoordinates
-end
-
 function module.Run()
     local Player = GetPlayer()
     local c = 1
@@ -242,36 +188,45 @@ function module.Run()
     end
 
     for k, mob in pairs(Mobs) do
-        if not mob.invisible then
-            moblist[c] = {x = mob.x, y = mob.y}
+        if mob.invisible == false then
+            moblist[c] = {}       
+            moblist[c].x = mob.x
+            moblist[c].y = mob.y
             c = c + 1
         end
     end
 
-    while true do
-        Player = GetPlayer()
-        print("Player position: ", Player.x, Player.y)
-        print("Fixed coordinates: ", fixedCoordinates.x, fixedCoordinates.y)
-
-        -- Add tolerance to fixed coordinates check
-        if math.abs(Player.x - fixedCoordinates.x) <= 20 and math.abs(Player.y - fixedCoordinates.y) <= 200 then
-            print("Player within tolerance range of fixed coordinates, attempting to attack")
-            TryAttack(moblist)
-        else
-            print("Moving to fixed coordinates")
-            local ms = MoveTo(fixedCoordinates.x, fixedCoordinates.y)
-            if ms == 2 then
-                FailCount = FailCount + 1
-                if FailCount > 5 then
-                    print("Unable to find the path, trying random mob")
-                    local idx = math.random(global.length(moblist))
-                    MoveTo(moblist[idx].x, moblist[idx].y)
-                end
-            else
-                FailCount = 0
-            end
-        end
+    local attackable = TryAttack(moblist)
+    
+    if attackable and module.Attack.StopMoveWhenAttack then
+        StopMove()
+        return 0 
     end
+    
+    if global.IngorePathingToMob then
+        return 0
+    end
+
+    last_target = FindNextPos(moblist)  
+    if last_target ~= nil then
+        local dst = math.abs(last_target.x - Player.x) + math.abs(last_target.y - Player.y)
+        local ms = MoveTo(last_target.x, last_target.y)
+    
+        if ms == 2 then
+            FailCount = FailCount + 1
+            if FailCount > 5 then
+                print("Unable to find the path, try random mob")
+                local idx = math.random(global.length(moblist))
+                MoveTo(moblist[idx].x, moblist[idx].y)
+            end
+        else
+            FailCount = 0
+        end
+
+        return 0
+    end 
+    print("Unable to find mob")
+    return 0
 end
 
 return module
